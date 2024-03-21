@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <optional>
 
 namespace ob {
 using order_id_t = std::uint64_t;
@@ -181,6 +182,14 @@ struct page {
         }
     }
 
+    const md_price_level* find(const price_t px) const noexcept {
+        if (auto it = price_to_level_.find(px);
+            it != std::cend(price_to_level_)) {
+            return std::addressof(it->second);
+        }
+        return nullptr;
+    }
+
     std::size_t size() const { return std::size(price_to_level_); }
     bool empty() const { return std::empty(price_to_level_); }
 
@@ -253,15 +262,12 @@ struct book {
         }
     }
 
-    // const bids_t &bids() const noexcept { return bids_; }
-    // const asks_t &asks() const noexcept { return asks_; }
-
-    std::optional<const md_order*>
+    const md_order*
     find_order(const order_id_t id) const noexcept {
         if (auto it = id_to_order_.find(id); it != std::cend(id_to_order_)) {
             return it->second;
         }
-        return std::nullopt;
+        return nullptr;
     }
 
     bool empty() const noexcept { return std::empty(id_to_order_); }
