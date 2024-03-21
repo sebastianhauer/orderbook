@@ -20,59 +20,48 @@ TEMPLATE_TEST_CASE("page", "[page]", buy_t, sell_t) {
     auto page = ob::page<side>{};
     REQUIRE(std::empty(page));
     REQUIRE(std::size(page) == 0);
+    REQUIRE(page.find(px) == nullptr);
 
     auto order_0 = ob::md_order{.px = px, .qty = 42};
     auto order_ptr_0 = std::addressof(order_0);
+
+    auto order_1 = ob::md_order{.px = px, .qty = 42};
+    auto order_ptr_1 = std::addressof(order_1);
+
     SECTION("adding order changes size") {
         page.add_order(order_ptr_0);
         REQUIRE(std::size(page) == 1);
         REQUIRE(not std::empty(page));
+        auto maybe_level = page.find(px);
+        REQUIRE(maybe_level != nullptr);
+        REQUIRE(maybe_level->px == px);
+        REQUIRE(maybe_level->qty == 42);
+        REQUIRE(maybe_level->oc == 1);
     }
-    // SECTION("add order") {
-    //     REQUIRE(book.empty());
-    //     book.add_order(ob::timestamp_t{}, 1, 100, 42, side);
-    //     REQUIRE(not book.empty());
-    //     REQUIRE(book.size() == 1);
-    //     REQUIRE(book.page<side>().size() == 1);
-    // }
-    // SECTION("add order and find") {
-    //     REQUIRE(book.empty());
-    //     auto maybe_order = book.find_order(1);
-    //     REQUIRE(not maybe_order.has_value());
-    //     book.add_order(ob::timestamp_t{}, 1, 100, 42, side);
-    //     maybe_order = book.find_order(1);
-    //     REQUIRE(maybe_order.has_value());
-    // }
-    // SECTION("delete order") {
-    //     REQUIRE(book.empty());
-    //     book.add_order(ob::timestamp_t{}, 1, 100, 42, side);
-    //     book.delete_order(1);
-    //     REQUIRE(book.empty());
-    //     REQUIRE(book.size() == 0);
-    //     REQUIRE(book.page<side>().size() == 0);
-    // }
-    // SECTION("reduce order quantity") {
-    //     REQUIRE(book.empty());
-    //     book.add_order(ob::timestamp_t{}, 1, 100, 42, side);
-    //     book.reduce_order_quantity(1, 10);
-    //     REQUIRE(not book.empty());
-    //     REQUIRE(book.size() == 1);
-    //     REQUIRE(book.page<side>().size() == 1);
-    // }
-    // SECTION("reduce order quantity to zero") {
-    //     REQUIRE(book.empty());
-    //     book.add_order(ob::timestamp_t{}, 1, 100, 42, side);
-    //     book.reduce_order_quantity(1, 42);
-    //     REQUIRE(book.empty());
-    //     REQUIRE(book.size() == 0);
-    //     REQUIRE(book.page<side>().size() == 0);
-    // }
-    // SECTION("replace order") {
-    //     REQUIRE(book.empty());
-    //     book.add_order(ob::timestamp_t{}, 1, 100, 42, side);
-    //     book.replace_order(ob::timestamp_t{}, 1, 2, 100, 42);
-    //     REQUIRE(not book.empty());
-    //     REQUIRE(book.size() == 1);
-    //     REQUIRE(book.page<side>().size() == 1);
-    // }
+    SECTION("deleting last order changes size") {
+        page.add_order(order_ptr_0);
+        page.delete_order(order_ptr_0);
+        REQUIRE(std::empty(page));
+        REQUIRE(std::size(page) == 0);
+        REQUIRE(page.find(px) == nullptr);
+    }
+    SECTION("deleting from level with two orders doesn't change size") {
+        page.add_order(order_ptr_0);
+        page.add_order(order_ptr_1);
+        page.delete_order(order_ptr_0);
+        REQUIRE(not std::empty(page));
+        REQUIRE(std::size(page) == 1);
+    }
+    SECTION("reducing order quantity with quantity remaining doesn't change size") {
+        page.add_order(order_ptr_0);
+        page.reduce(order_ptr_0, 10);
+        REQUIRE(not std::empty(page));
+        REQUIRE(std::size(page) == 1);
+    }
+    SECTION("reducing order quantity to zero changes size") {
+        page.add_order(order_ptr_0);
+        page.reduce(order_ptr_0, 42);
+        REQUIRE(std::empty(page));
+        REQUIRE(std::size(page) == 0);
+    }
 }

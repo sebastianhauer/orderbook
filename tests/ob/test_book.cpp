@@ -31,10 +31,10 @@ TEMPLATE_TEST_CASE("book", "[book]", buy_t, sell_t) {
     SECTION("add order and find") {
         REQUIRE(book.empty());
         auto maybe_order = book.find_order(1);
-        REQUIRE(not maybe_order.has_value());
+        REQUIRE(maybe_order == nullptr);
         book.add_order(ob::timestamp_t{}, 1, 100, 42, side);
         maybe_order = book.find_order(1);
-        REQUIRE(maybe_order.has_value());
+        REQUIRE(maybe_order != nullptr);
     }
     SECTION("delete order") {
         REQUIRE(book.empty());
