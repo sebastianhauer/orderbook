@@ -19,7 +19,7 @@ TEST_CASE("book", "[book]") {
     auto ask_px_dist = std::uniform_int_distribution<>(301, 501);
     auto qty_dist = std::uniform_int_distribution<>(1, 100);
 
-    constexpr auto N = 100'000;
+    constexpr auto N = 100'000u;
 
     auto bid_order_ids = std::vector<sh::ob::order_id_t>{N};
     std::iota(std::begin(bid_order_ids), std::end(bid_order_ids), 1);
@@ -33,7 +33,7 @@ TEST_CASE("book", "[book]") {
     auto asks = std::vector<sh::ob::md_order>{};
     bids.reserve(N);
     asks.reserve(N);
-    for (auto i = 0; i < N; ++i) {
+    for (auto i = 0u; i < N; ++i) {
         bids.push_back(sh::ob::md_order{sh::ob::timestamp_t{}, bid_order_ids[i],
                                     bid_px_dist(gen), qty_dist(gen),
                                     sh::ob::md_side::buy});
@@ -42,13 +42,13 @@ TEST_CASE("book", "[book]") {
                                     sh::ob::md_side::sell});
     }
     BENCHMARK("add orders") {
-        for (auto i = 0; i < N; ++i) {
+        for (auto i = 0u; i < N; ++i) {
             const auto& bid_order = bids[i];
             const auto& ask_order = asks[i];
             book.add_order(bid_order.ts, bid_order.id, bid_order.px,
                            bid_order.qty, bid_order.side);
-            // book.add_order(ask_order.ts, ask_order.id, ask_order.px,
-            //                ask_order.qty, ask_order.side);
+            book.add_order(ask_order.ts, ask_order.id, ask_order.px,
+                           ask_order.qty, ask_order.side);
         }
         return std::size(book);
     };
@@ -60,21 +60,21 @@ TEST_CASE("book", "[book]") {
     std::shuffle(std::begin(ask_order_ids_to_delete),
                  std::end(ask_order_ids_to_delete), gen);
 
-    // BENCHMARK_ADVANCED("delete orders")(Catch::Benchmark::Chronometer meter) {
-    //     for (auto i = 0; i < N; ++i) {
-    //         const auto& bid_order = bids[i];
-    //         const auto& ask_order = asks[i];
-    //         book.add_order(bid_order.ts, bid_order.id, bid_order.px,
-    //                        bid_order.qty, bid_order.side);
-    //         book.add_order(ask_order.ts, ask_order.id, ask_order.px,
-    //                        ask_order.qty, ask_order.side);
-    //     }
-    //     meter.measure([&](int) {
-    //         for (auto i = 0; i < N; ++i) {
-    //             book.delete_order(bid_order_ids_to_delete[i]);
-    //             book.delete_order(ask_order_ids_to_delete[i]);
-    //         }
-    //         return std::size(book);
-    //     });
-    // };
+    BENCHMARK_ADVANCED("delete orders")(Catch::Benchmark::Chronometer meter) {
+        for (auto i = 0u; i < N; ++i) {
+            const auto& bid_order = bids[i];
+            const auto& ask_order = asks[i];
+            book.add_order(bid_order.ts, bid_order.id, bid_order.px,
+                           bid_order.qty, bid_order.side);
+            book.add_order(ask_order.ts, ask_order.id, ask_order.px,
+                           ask_order.qty, ask_order.side);
+        }
+        meter.measure([&](int) {
+            for (auto i = 0u; i < N; ++i) {
+                book.delete_order(bid_order_ids_to_delete[i]);
+                book.delete_order(ask_order_ids_to_delete[i]);
+            }
+            return std::size(book);
+        });
+    };
 }

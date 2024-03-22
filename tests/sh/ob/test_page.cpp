@@ -16,7 +16,6 @@ struct sell_t {
 TEMPLATE_TEST_CASE("page", "[page]", buy_t, sell_t) {
     constexpr auto side = TestType::value;
     constexpr auto px = 100;
-    auto dur = sh::ob::timestamp_t::duration{1};
     auto page = sh::ob::page<side>{};
     REQUIRE(std::empty(page));
     REQUIRE(std::size(page) == 0);

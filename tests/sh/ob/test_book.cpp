@@ -15,7 +15,6 @@ struct sell_t {
 
 TEMPLATE_TEST_CASE("book", "[book]", buy_t, sell_t) {
     constexpr auto side = TestType::value;
-    auto dur = sh::ob::timestamp_t::duration{1};
     auto book = sh::ob::book{};
     REQUIRE(book.empty());
     REQUIRE(book.size() == 0);

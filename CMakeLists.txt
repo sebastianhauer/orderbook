@@ -19,6 +19,15 @@ endif()
 # when compiling with PCH enabled
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_library(default_warnings INTERFACE)
+
+include(cmake/CompilerWarnings.cmake)
+_set_project_warnings(
+    default_warnings
+    TRUE
+    ""
+    "")
+
 include(Dependencies.cmake)
 
 add_subdirectory(include)
