@@ -54,15 +54,17 @@ struct tracing_allocator {
     }
 };
 
-template <class T, class U>
+template <typename T, typename U, typename Tag>
 constexpr bool
-operator==(const tracing_allocator<T>&, const tracing_allocator<U>&) noexcept {
+operator==(const tracing_allocator<T, Tag>&,
+           const tracing_allocator<U, Tag>&) noexcept {
     return true;
 }
 
-template <class T, class U>
+template <typename T, typename U, typename Tag>
 constexpr bool
-operator!=(const tracing_allocator<T>&, const tracing_allocator<U>&) noexcept {
+operator!=(const tracing_allocator<T, Tag>&,
+           const tracing_allocator<U, Tag>&) noexcept {
     return false;
 }
 

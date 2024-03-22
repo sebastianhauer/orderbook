@@ -8,9 +8,9 @@
 namespace sh::mem {
 
 #ifdef __cpp_lib_hardware_interference_size
-constexpr std::size_t cache_line_alignment = std::hardware_destructive_interference_size;
+inline constexpr std::size_t cache_line_alignment = std::hardware_destructive_interference_size;
 #else
-constexpr std::size_t cache_line_alignment = 64;
+inline constexpr std::size_t cache_line_alignment = 64;
 #endif
 
 template <std::size_t N, std::size_t Alignment = cache_line_alignment>
