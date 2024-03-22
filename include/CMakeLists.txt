@@ -1,13 +1,13 @@
-add_library(ob INTERFACE)
+add_library(sh INTERFACE)
 
 target_include_directories(
-  ob
+  sh
   INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
 target_link_system_libraries(
-  ob
+  sh
   INTERFACE
   fmt::fmt
-  Boost::intrusive
+  Boost::align
   gtl)

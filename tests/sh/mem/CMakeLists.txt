@@ -1,6 +1,6 @@
-add_executable(bench bench_book.cpp)
+add_executable(test_mem test_storage.cpp)
 target_link_system_libraries(
-            bench
+            test_mem
             PRIVATE
-            ob
+            sh
             Catch2::Catch2WithMain)

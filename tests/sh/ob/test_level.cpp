@@ -1,23 +1,23 @@
-#include <ob/orderbook.hpp>
+#include <sh/ob/orderbook.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <memory>
 
 TEST_CASE("add orders", "[level]") {
-    auto order_0 = ob::md_order{.px = 100, .qty = 42};
+    auto order_0 = sh::ob::md_order{.px = 100, .qty = 42};
     auto order_ptr_0 = std::addressof(order_0);
 
-    auto level = ob::md_price_level{};
+    auto level = sh::ob::md_price_level{};
     SECTION("inject first order at construction") {
-        level = ob::md_price_level{.px = 100,
+        level = sh::ob::md_price_level{.px = 100,
                                    .qty = 42,
                                    .oc = 1,
                                    .head_order = order_ptr_0,
                                    .tail_order = order_ptr_0};
     }
     SECTION("construct empty") {
-        level = ob::md_price_level{.px = 100,
+        level = sh::ob::md_price_level{.px = 100,
                                    .qty = 0,
                                    .oc = 0,
                                    .head_order = nullptr,
@@ -28,7 +28,7 @@ TEST_CASE("add orders", "[level]") {
         REQUIRE(level.qty == 42);
     }
 
-    auto order_1 = ob::md_order{.px = 100, .qty = 23};
+    auto order_1 = sh::ob::md_order{.px = 100, .qty = 23};
     auto order_ptr_1 = std::addressof(order_1);
 
     level.push_back(order_ptr_1);
@@ -41,7 +41,7 @@ TEST_CASE("add orders", "[level]") {
     REQUIRE(order_0.prev_order == nullptr);
     REQUIRE(order_1.prev_order == order_ptr_0);
 
-    auto order_2 = ob::md_order{.px = 100, .qty = 12};
+    auto order_2 = sh::ob::md_order{.px = 100, .qty = 12};
     auto order_ptr_2 = std::addressof(order_2);
 
     level.push_back(order_ptr_2);
@@ -58,19 +58,19 @@ TEST_CASE("add orders", "[level]") {
 }
 
 TEST_CASE("remove orders", "[level]") {
-    auto order_0 = ob::md_order{.px = 100, .qty = 42};
+    auto order_0 = sh::ob::md_order{.px = 100, .qty = 42};
     auto order_ptr_0 = std::addressof(order_0);
-    auto level = ob::md_price_level{.px = 100,
+    auto level = sh::ob::md_price_level{.px = 100,
                                     .qty = 42,
                                     .oc = 1,
                                     .head_order = order_ptr_0,
                                     .tail_order = order_ptr_0};
 
-    auto order_1 = ob::md_order{.px = 100, .qty = 23};
+    auto order_1 = sh::ob::md_order{.px = 100, .qty = 23};
     auto order_ptr_1 = std::addressof(order_1);
     level.push_back(order_ptr_1);
 
-    auto order_2 = ob::md_order{.px = 100, .qty = 12};
+    auto order_2 = sh::ob::md_order{.px = 100, .qty = 12};
     auto order_ptr_2 = std::addressof(order_2);
     level.push_back(order_ptr_2);
 
@@ -128,9 +128,9 @@ TEST_CASE("remove orders", "[level]") {
 }
 
 TEST_CASE("reduce order quantity", "[level]") {
-    auto order_0 = ob::md_order{.px = 100, .qty = 42};
+    auto order_0 = sh::ob::md_order{.px = 100, .qty = 42};
     auto order_ptr_0 = std::addressof(order_0);
-    auto level = ob::md_price_level{.px = 100,
+    auto level = sh::ob::md_price_level{.px = 100,
                                     .qty = 42,
                                     .oc = 1,
                                     .head_order = order_ptr_0,
@@ -153,19 +153,19 @@ TEST_CASE("reduce order quantity", "[level]") {
 }
 
 TEST_CASE("iterate", "[level]") {
-    auto order_0 = ob::md_order{.px = 100, .qty = 42};
+    auto order_0 = sh::ob::md_order{.px = 100, .qty = 42};
     auto order_ptr_0 = std::addressof(order_0);
-    auto level = ob::md_price_level{.px = 100,
+    auto level = sh::ob::md_price_level{.px = 100,
                                     .qty = 42,
                                     .oc = 1,
                                     .head_order = order_ptr_0,
                                     .tail_order = order_ptr_0};
 
-    auto order_1 = ob::md_order{.px = 100, .qty = 23};
+    auto order_1 = sh::ob::md_order{.px = 100, .qty = 23};
     auto order_ptr_1 = std::addressof(order_1);
     level.push_back(order_ptr_1);
 
-    auto order_2 = ob::md_order{.px = 100, .qty = 12};
+    auto order_2 = sh::ob::md_order{.px = 100, .qty = 12};
     auto order_ptr_2 = std::addressof(order_2);
     level.push_back(order_ptr_2);
 
