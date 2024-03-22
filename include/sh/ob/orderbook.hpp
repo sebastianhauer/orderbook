@@ -38,6 +38,8 @@ struct md_order {
 };
 
 static_assert(sizeof(md_order) == 48, "md_order must be 48 bytes");
+static_assert(std::is_standard_layout_v<md_order>,
+              "md_order must use at least a standard layout");
 
 struct md_price_level {
     price_t px;               // 8
@@ -273,13 +275,36 @@ class order_id_fh_map_stalloc_policy {
     map_type id_to_order_{};
 };
 
+template <typename Allocator = std::allocator<md_order>>
+struct stateless_order_allocation_policy : public Allocator {
+    md_order* alloc_construct_order(const timestamp_t ts, const order_id_t id,
+                                    const price_t px, const quantity_t qty,
+                                    const md_side side) {
+        md_order* order_storage =
+            std::allocator_traits<Allocator>::allocate(*this, 1);
+        new (order_storage) md_order{.ts = ts,
+                                     .id = id,
+                                     .px = px,
+                                     .qty = qty,
+                                     .side = side,
+                                     .prev_order = nullptr,
+                                     .next_order = nullptr};
+        return order_storage;
+    }
+
+    void destroy_dealloc_order(md_order* const order) {
+        std::allocator_traits<Allocator>::destroy(*this, order);
+    }
+};
+
 template <typename OrderIDMapPolicy = order_id_fh_map_policy<>,
-          typename PriceMapPolicy = price_fh_map_policy<>>
-struct book : protected OrderIDMapPolicy {
+          typename PriceMapPolicy = price_fh_map_policy<>,
+          typename OrderAllocationPolicy = stateless_order_allocation_policy<>>
+struct book : protected OrderIDMapPolicy, protected OrderAllocationPolicy {
 
     void add_order(const timestamp_t ts, const order_id_t id, const price_t px,
                    const quantity_t qty, const md_side side) {
-        auto order = new md_order{ts, id, px, qty, side};
+        auto order = alloc_construct_order(ts, id, px, qty, side);
         if (auto [it, inserted] = id_to_order_.emplace(id, order); inserted) {
             if (side == md_side::buy) {
                 bids_.add_order(order);
@@ -287,8 +312,8 @@ struct book : protected OrderIDMapPolicy {
                 asks_.add_order(order);
             }
         } else {
-            delete order;
-            // TODO: error
+            destroy_dealloc_order(order);
+            // TODO: better error handling
         }
     }
 
@@ -349,6 +374,9 @@ struct book : protected OrderIDMapPolicy {
     std::size_t size() const noexcept { return std::size(id_to_order_); }
 
   private:
+    using OrderAllocationPolicy::alloc_construct_order;
+    using OrderAllocationPolicy::destroy_dealloc_order;
+
     void delete_order_iter(auto id_to_order_it) {
         auto order = id_to_order_it->second;
         if (order->side == md_side::buy) {
