@@ -39,14 +39,14 @@ struct tracing_allocator {
     template <typename U>
     constexpr tracing_allocator(const tracing_allocator<U, Tag>&) noexcept {}
 
-    T* allocate(std::size_t n) {
+    T* allocate(const std::size_t n) {
         std::cout << demange<Tag>{} << ": allocate " << n << " * sizeof "
                   << sizeof(T) << " = " << n * sizeof(T) << " bytes of "
                   << demange<T>{} << std::endl;
         return std::allocator<T>{}.allocate(n);
     }
 
-    void deallocate(T* p, std::size_t n) {
+    void deallocate(T* const p, const std::size_t n) {
         std::cout << demange<Tag>{} << ": deallocate " << n << " * sizeof "
                   << sizeof(T) << " = " << n * sizeof(T) << " bytes of "
                   << demange<T>{} << std::endl;
