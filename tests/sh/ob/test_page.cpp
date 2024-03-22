@@ -1,4 +1,4 @@
-#include <ob/orderbook.hpp>
+#include <sh/ob/orderbook.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -6,26 +6,26 @@
 #include <memory>
 
 struct buy_t {
-    static constexpr auto value = ob::md_side::buy;
+    static constexpr auto value = sh::ob::md_side::buy;
 };
 
 struct sell_t {
-    static constexpr auto value = ob::md_side::sell;
+    static constexpr auto value = sh::ob::md_side::sell;
 };
 
 TEMPLATE_TEST_CASE("page", "[page]", buy_t, sell_t) {
     constexpr auto side = TestType::value;
     constexpr auto px = 100;
-    auto dur = ob::timestamp_t::duration{1};
-    auto page = ob::page<side>{};
+    auto dur = sh::ob::timestamp_t::duration{1};
+    auto page = sh::ob::page<side>{};
     REQUIRE(std::empty(page));
     REQUIRE(std::size(page) == 0);
     REQUIRE(page.find(px) == nullptr);
 
-    auto order_0 = ob::md_order{.px = px, .qty = 42};
+    auto order_0 = sh::ob::md_order{.px = px, .qty = 42};
     auto order_ptr_0 = std::addressof(order_0);
 
-    auto order_1 = ob::md_order{.px = px, .qty = 42};
+    auto order_1 = sh::ob::md_order{.px = px, .qty = 42};
     auto order_ptr_1 = std::addressof(order_1);
 
     SECTION("adding order changes size") {

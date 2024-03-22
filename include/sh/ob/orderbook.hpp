@@ -1,5 +1,7 @@
 #pragma once
 
+#include "sh/mem/tracing_allocator.hpp"
+
 #include <gtl/phmap.hpp>
 
 #include <cassert>
@@ -9,7 +11,7 @@
 #include <iterator>
 #include <optional>
 
-namespace ob {
+namespace sh::ob {
 using order_id_t = std::uint64_t;
 using price_t = std::int64_t;
 using quantity_t = std::int32_t;
@@ -145,8 +147,10 @@ struct md_price_level {
 };
 static_assert(sizeof(md_price_level) == 32, "md_price_level must be 32 bytes");
 
-template <md_side side>
+template <md_side side, typename PriceToLevelMapT =
+                            gtl::flat_hash_map<price_t, md_price_level>>
 struct page {
+
     void add_order(md_order* const order) {
         if (auto [it, inserted] = price_to_level_.try_emplace(
                 order->px, md_price_level{.px = order->px,
@@ -194,13 +198,20 @@ struct page {
     bool empty() const { return std::empty(price_to_level_); }
 
   private:
-    gtl::flat_hash_map<price_t, md_price_level> price_to_level_{};
+    PriceToLevelMapT price_to_level_{};
 };
 
-struct book {
-    using bids_t = page<md_side::buy>;
-    using asks_t = page<md_side::sell>;
+struct page_tag {};
 
+struct book {
+    using price_to_level_map_t = gtl::flat_hash_map<
+        price_t, md_price_level, std::hash<price_t>, std::equal_to<price_t>,
+        mem::tracing_allocator<std::pair<price_t, md_price_level>, page_tag>>;
+
+    using bids_t = page<md_side::buy, price_to_level_map_t>;
+    using asks_t = page<md_side::sell, price_to_level_map_t>;
+
+    book() { id_to_order_.reserve(200'000); }
     void add_order(const timestamp_t ts, const order_id_t id, const price_t px,
                    const quantity_t qty, const md_side side) {
         auto order = new md_order{ts, id, px, qty, side};
@@ -254,7 +265,7 @@ struct book {
     }
 
     template <md_side side>
-    const page<side>& page() const noexcept {
+    const page<side, price_to_level_map_t>& page() const noexcept {
         if constexpr (side == md_side::buy) {
             return bids_;
         } else {
@@ -262,8 +273,7 @@ struct book {
         }
     }
 
-    const md_order*
-    find_order(const order_id_t id) const noexcept {
+    const md_order* find_order(const order_id_t id) const noexcept {
         if (auto it = id_to_order_.find(id); it != std::cend(id_to_order_)) {
             return it->second;
         }
@@ -285,9 +295,12 @@ struct book {
         id_to_order_.erase(id_to_order_it);
     }
 
-    gtl::flat_hash_map<order_id_t, md_order*> id_to_order_{};
+    gtl::flat_hash_map<
+        order_id_t, md_order*, std::hash<order_id_t>, std::equal_to<order_id_t>,
+        mem::tracing_allocator<std::pair<const order_id_t, md_order*>, book>>
+        id_to_order_{};
     bids_t bids_{};
     asks_t asks_{};
 };
 
-}   // namespace ob
+}   // namespace sh::ob
