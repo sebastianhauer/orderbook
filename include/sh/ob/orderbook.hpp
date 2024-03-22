@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sh/mem/storage_allocator.hpp"
 #include "sh/mem/tracing_allocator.hpp"
 
 #include <gtl/phmap.hpp>
@@ -10,6 +11,7 @@
 #include <cstdint>
 #include <iterator>
 #include <optional>
+#include <type_traits>
 
 namespace sh::ob {
 using order_id_t = std::uint64_t;
@@ -203,15 +205,66 @@ struct page {
 
 struct page_tag {};
 
-struct book {
-    using price_to_level_map_t = gtl::flat_hash_map<
-        price_t, md_price_level, std::hash<price_t>, std::equal_to<price_t>,
-        mem::tracing_allocator<std::pair<price_t, md_price_level>, page_tag>>;
+struct book_tag {};
+
+template <std::size_t ReserveSize = 65536>
+class order_id_fh_map_policy {
+    using value_type = std::pair<const order_id_t, md_order*>;
+    using key_type = std::remove_cvref_t<value_type::first_type>;
+    using mapped_type = std::remove_cvref_t<value_type::second_type>;
+
+  public:
+    using map_type =
+        gtl::flat_hash_map<key_type, mapped_type, std::hash<key_type>,
+                           std::equal_to<key_type>>;
+
+    order_id_fh_map_policy() {
+        if constexpr (ReserveSize > 0) {
+            id_to_order_.reserve(ReserveSize);
+        }
+    }
+
+    map_type id_to_order_{};
+};
+
+template <std::size_t ReserveSize = 65536,
+          std::size_t FixedStorageSize = 4 * 1024 * 1024,
+          std::size_t Alignment = mem::cache_line_alignment>
+class order_id_fh_map_stalloc_policy {
+    using value_type = std::pair<const order_id_t, md_order*>;
+    using storage_type = mem::fixed_storage<FixedStorageSize, Alignment>;
+    using allocator_type =
+        mem::storage_allocator<value_type, storage_type, book_tag>;
+    using key_type = std::remove_cvref_t<value_type::first_type>;
+    using mapped_type = std::remove_cvref_t<value_type::second_type>;
+
+  public:
+    using map_type =
+        gtl::flat_hash_map<key_type, mapped_type, std::hash<key_type>,
+                           std::equal_to<key_type>, allocator_type>;
+
+    order_id_fh_map_stalloc_policy()
+        : id_to_order_{allocator_type{std::addressof(id_to_order_storage_)}} {
+        if constexpr (ReserveSize > 0) {
+            id_to_order_.reserve(ReserveSize);
+        }
+    }
+
+    storage_type id_to_order_storage_{};
+    map_type id_to_order_{};
+};
+
+template <typename OrderIDMapPolicy = order_id_fh_map_policy<>>
+struct book : protected OrderIDMapPolicy {
+    using price_to_level_map_t =
+        gtl::flat_hash_map<price_t, md_price_level, std::hash<price_t>,
+                           std::equal_to<price_t>>;
+    // ,
+    // mem::tracing_allocator<std::pair<price_t, md_price_level>, page_tag>>;
 
     using bids_t = page<md_side::buy, price_to_level_map_t>;
     using asks_t = page<md_side::sell, price_to_level_map_t>;
 
-    book() { id_to_order_.reserve(200'000); }
     void add_order(const timestamp_t ts, const order_id_t id, const price_t px,
                    const quantity_t qty, const md_side side) {
         auto order = new md_order{ts, id, px, qty, side};
@@ -295,10 +348,7 @@ struct book {
         id_to_order_.erase(id_to_order_it);
     }
 
-    gtl::flat_hash_map<
-        order_id_t, md_order*, std::hash<order_id_t>, std::equal_to<order_id_t>,
-        mem::tracing_allocator<std::pair<const order_id_t, md_order*>, book>>
-        id_to_order_{};
+    using OrderIDMapPolicy::id_to_order_;
     bids_t bids_{};
     asks_t asks_{};
 };

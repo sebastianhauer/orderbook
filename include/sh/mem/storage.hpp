@@ -5,6 +5,8 @@
 #include <memory>
 #include <new>
 
+#include <iostream>
+
 namespace sh::mem {
 
 constexpr std::size_t cache_line_alignment = 64;
@@ -22,6 +24,9 @@ struct fixed_storage {
     std::size_t used() const noexcept { return N - rem_size_; }
 
     void* allocate(const std::size_t n, const std::size_t align) {
+        std::cout << "allocate " << n << " bytes with alignment " << align
+                  << " bytes, N: " << N << ", rem_size: " << rem_size_
+                  << std::endl;
         if (void* ptr = data_ptr_; std::align(align, n, ptr, rem_size_)) {
             data_ptr_ = static_cast<std::byte*>(ptr) + n;
             rem_size_ -= n;
