@@ -149,9 +149,28 @@ struct md_price_level {
 };
 static_assert(sizeof(md_price_level) == 32, "md_price_level must be 32 bytes");
 
-template <md_side side, typename PriceToLevelMapT =
-                            gtl::flat_hash_map<price_t, md_price_level>>
-struct page {
+template <std::size_t ReserveSize = 0>
+class price_fh_map_policy {
+    using value_type = std::pair<const price_t, md_price_level>;
+    using key_type = std::remove_cvref_t<value_type::first_type>;
+    using mapped_type = std::remove_cvref_t<value_type::second_type>;
+
+  public:
+    using map_type =
+        gtl::flat_hash_map<key_type, mapped_type, std::hash<key_type>,
+                           std::equal_to<key_type>>;
+
+    price_fh_map_policy() {
+        if constexpr (ReserveSize > 0) {
+            price_to_level_.reserve(ReserveSize);
+        }
+    }
+
+    map_type price_to_level_{};
+};
+
+template <md_side side, typename PriceMapPolicy = price_fh_map_policy<>>
+struct page : protected PriceMapPolicy {
 
     void add_order(md_order* const order) {
         if (auto [it, inserted] = price_to_level_.try_emplace(
@@ -200,7 +219,7 @@ struct page {
     bool empty() const { return std::empty(price_to_level_); }
 
   private:
-    PriceToLevelMapT price_to_level_{};
+    using PriceMapPolicy::price_to_level_;
 };
 
 struct page_tag {};
@@ -254,16 +273,9 @@ class order_id_fh_map_stalloc_policy {
     map_type id_to_order_{};
 };
 
-template <typename OrderIDMapPolicy = order_id_fh_map_policy<>>
+template <typename OrderIDMapPolicy = order_id_fh_map_policy<>,
+          typename PriceMapPolicy = price_fh_map_policy<>>
 struct book : protected OrderIDMapPolicy {
-    using price_to_level_map_t =
-        gtl::flat_hash_map<price_t, md_price_level, std::hash<price_t>,
-                           std::equal_to<price_t>>;
-    // ,
-    // mem::tracing_allocator<std::pair<price_t, md_price_level>, page_tag>>;
-
-    using bids_t = page<md_side::buy, price_to_level_map_t>;
-    using asks_t = page<md_side::sell, price_to_level_map_t>;
 
     void add_order(const timestamp_t ts, const order_id_t id, const price_t px,
                    const quantity_t qty, const md_side side) {
@@ -318,7 +330,7 @@ struct book : protected OrderIDMapPolicy {
     }
 
     template <md_side side>
-    const page<side, price_to_level_map_t>& page() const noexcept {
+    const auto& page() const noexcept {
         if constexpr (side == md_side::buy) {
             return bids_;
         } else {
@@ -349,8 +361,8 @@ struct book : protected OrderIDMapPolicy {
     }
 
     using OrderIDMapPolicy::id_to_order_;
-    bids_t bids_{};
-    asks_t asks_{};
+    ob::page<md_side::buy, PriceMapPolicy> bids_{};
+    ob::page<md_side::sell, PriceMapPolicy> asks_{};
 };
 
 }   // namespace sh::ob
