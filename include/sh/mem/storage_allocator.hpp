@@ -25,7 +25,8 @@ struct storage_allocator {
         : storage_{storage} {}
 
     template <typename U>
-    constexpr storage_allocator(const storage_allocator<U, StorageT, Tag>& other) noexcept
+    constexpr storage_allocator(
+        const storage_allocator<U, StorageT, Tag>& other) noexcept
         : storage_{other.storage_} {}
 
     T* allocate(const std::size_t n) {
@@ -38,21 +39,23 @@ struct storage_allocator {
     }
 
   private:
-    template<typename U, typename StorageU, typename TagU>
+    template <typename U, typename StorageU, typename TagU>
     friend struct storage_allocator;
 
     storage_type* storage_;
 };
 
-template <class T, class U, typename StorageT, typename Tag>
+template <typename T, typename U, typename StorageT, typename Tag>
 constexpr bool
-operator==(const storage_allocator<T, StorageT, Tag>&, const storage_allocator<U, StorageT, Tag>&) noexcept {
+operator==(const storage_allocator<T, StorageT, Tag>&,
+           const storage_allocator<U, StorageT, Tag>&) noexcept {
     return true;
 }
 
-template <class T, class U, typename StorageT, typename Tag>
+template <typename T, typename U, typename StorageT, typename Tag>
 constexpr bool
-operator!=(const storage_allocator<T, StorageT, Tag>&, const storage_allocator<U, StorageT, Tag>&) noexcept {
+operator!=(const storage_allocator<T, StorageT, Tag>&,
+           const storage_allocator<U, StorageT, Tag>&) noexcept {
     return false;
 }
 
