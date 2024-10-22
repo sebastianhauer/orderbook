@@ -24,7 +24,7 @@ add_library(default_warnings INTERFACE)
 include(cmake/CompilerWarnings.cmake)
 _set_project_warnings(
     default_warnings
-    TRUE
+    ""
     ""
     "")
 

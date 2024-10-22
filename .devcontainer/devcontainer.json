@@ -1,0 +1,43 @@
+{
+    "name": "C++ Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "options": [
+            "--platform=${localEnv:DEV_CONTAINER_PLATFORM:linux/amd64}"
+        ],
+        "args": {
+            "VARIANT": "ubuntu-24.04"
+        }
+    },
+    "capAdd": [
+        "SYS_PTRACE"
+    ],
+    "securityOpt": [
+        "seccomp=unconfined"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.cpptools-themes",
+                "ms-vscode.cmake-tools",
+                "twxs.cmake",
+                "ms-azuretools.vscode-docker",
+                "github.copilot",
+                "github.copilot-chat"
+            ]
+        }
+    },
+    "remoteUser": "vscode",
+    "mounts": [
+        {
+            "source": "${localEnv:HOME}${localEnv:USERPROFILE}/.ssh",
+            "target": "/home/vscode/.ssh",
+            "type": "bind"
+        }
+    ],
+    "runArgs": [
+        "--platform=${localEnv:DEV_CONTAINER_PLATFORM:linux/amd64}"
+    ]
+}
